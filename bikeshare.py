@@ -1,7 +1,7 @@
 import time
 import pandas as pd
-import numpy as np
-from datetime import datetime
+from statistics import mode
+
 
 CITY_DATA = {'chicago': 'chicago.csv',
               'new york city': 'new_york_city.csv',
@@ -13,37 +13,21 @@ class data_frame_manger():
         self.all_df = all_df
         self.filtered_df = None
     
-    def __get_row_as_list(self, row):
-        row_list = list()
-        for val in row:
-            row_list.append(val)
-        return row_list
-    
     def __filter_df_for_all_months_and_selected_day(self, day):
-        df = pd.DataFrame(columns =  self.all_df.columns)
-        cnt = 1
-        #df = self.all_df[datetime.fromisoformat(self.all_df['Start Time'].valuesnew).strftime("%A").lower().strip().find(day) != -1]
-        #for index, row in self.all_df.iterrows():
-        for index in range(len(self.all_df)):
-            start_time = datetime.fromisoformat(self.all_df['Start Time'].iloc[index])
-            end_time = datetime.fromisoformat(self.all_df['End Time'].iloc[index])
-            start_day = start_time.strftime("%A")
-            end_day = end_time.strftime("%A")
-            start_day = start_day.lower().strip()
-            end_day = end_day.lower().strip()
-            if start_day.find(day) != -1 and end_day.find(day) != -1:
-                df.loc[cnt] = self.all_df.loc[index]
-                cnt = cnt + 1
-            
+        df = self.all_df[(self.all_df['Start Day'] == day) & \
+                         (self.all_df['End Day'] == day)]
         return df
     
     def __filter_df_for_all_days_in_selected_month(self, month):
-        month_converter_ = month_converter()
-        df = pd.DataFrame(columns =  self.all_df.columns)
+        df = self.all_df[(self.all_df['Start Month'] == month) \
+                         & (self.all_df['End Month'] == month)]
         return df
     
     def __filter_df_for_selected_month_and_selected_day(self, month, day):
-        df = pd.DataFrame(columns =  self.all_df.columns)
+        df = self.all_df[((self.all_df['Start Month'] == month) \
+                         & (self.all_df['End Month'] == month)) &\
+                         ((self.all_df['Start Day'] == day) \
+                         & (self.all_df['End Day'] == day))]
         return df
     
     def get_filtered_df(self, month, day):
@@ -52,14 +36,16 @@ class data_frame_manger():
         elif month.find('all') != -1 and day.find('all') == -1:
             self.filtered_df = self.__filter_df_for_all_months_and_selected_day(day)
         elif month.find('all') == -1 and day.find('all') != -1:
-            self.filtered_df = self.__filter_df_for_all_days_in_selected_month(day)
+            self.filtered_df = self.__filter_df_for_all_days_in_selected_month(month)
         elif month.find('all') == -1 and day.find('all') == -1:
             self.filtered_df = self.__filter_df_for_selected_month_and_selected_day(month, day)
 
 class month_checker:
     def __init__(self):
-        self.months = 'all' + ' ' + 'january' + ' ' + 'february' + ' ' +  'march' + ' ' +  'april' + ' ' +  'may' + ' ' +  \
-                      'june' + ' ' +  'july' + ' ' + 'august' + ' ' +  'september' + ' ' + 'october' + ' ' +  'november' + ' ' +  'december'
+        self.months = 'all' + ' ' + 'january' + ' ' + 'february' + ' ' +  'march' + ' ' + \
+                      'april' + ' ' +  'may' + ' ' +  'june' + ' ' +  'july' + ' ' + \
+                      'august' + ' ' +  'september' + ' ' + 'october' + ' ' +  'november' + \
+                      ' ' +  'december'
     
     def check_input_month(self, month):
         if month == None:
@@ -72,7 +58,9 @@ class month_checker:
     
 class day_checker:
     def __init__(self):
-        self.days = 'all'  + ' ' + 'monday' + ' ' + 'tuesday' + ' ' +  'wednesday' 'thursday' + ' ' +  'friday' + ' ' +  'saturday' + ' ' +  'sunday'
+        self.days = 'all'  + ' ' + 'monday' + ' ' + 'tuesday' + ' ' \
+                    +  'wednesday' 'thursday' + ' ' +  'friday' + ' ' \
+                    +  'saturday' + ' ' +  'sunday'
     
     def check_input_day(self, day):
         if day == None:
@@ -168,105 +156,126 @@ def load_data(city, month, day):
         df - Pandas DataFrame manager with DataFrame containing city data filtered by month and day
     """
     file_name = CITY_DATA[city]
-    
-    
+
     df_tmp = pd.read_csv(file_name)
+    df_tmp['Start Time'] = pd.to_datetime(df_tmp['Start Time'])
+    df_tmp['End Time'] = pd.to_datetime(df_tmp['End Time'])
+    
+    df_tmp['Start Day'] = df_tmp['Start Time'].map(lambda x: x.strftime('%A').lower().strip())
+    df_tmp['Start Month'] = df_tmp['Start Time'].map(lambda x: x.strftime('%B').lower().strip())
+    df_tmp['End Day'] = df_tmp['End Time'].map(lambda x: x.strftime('%A').lower().strip())
+    df_tmp['End Month'] = df_tmp['End Time'].map(lambda x: x.strftime('%B').lower().strip())
+    df_tmp['Start Hour'] = df_tmp['Start Time'].map(lambda x: x.strftime('%H'))
+    df_tmp['Start Stop Stations'] = 'Start Station: ' + df_tmp['Start Station'] + '; End Station: ' + df_tmp['End Station']
+    
     data_frame_manger_ = data_frame_manger(df_tmp)
     data_frame_manger_.get_filtered_df(month, day)
     
-    print(data_frame_manger_.filtered_df.shape)
-    print(data_frame_manger_.all_df.shape)
-    #print(len(data_frame_manger_.all_df))
-    print(data_frame_manger_.filtered_df.head())
     return data_frame_manger_
 
 
-#def time_stats(df):
+def time_stats(df):
     """Displays statistics on the most frequent times of travel."""
 
- #   print('\nCalculating The Most Frequent Times of Travel...\n')
+    print('\nCalculating The Most Frequent Times of Travel...\n')
     start_time = time.time()
 
-    # TO DO: display the most common month
+    most_common_month = mode(df['Start Month'])
+    print('The most common start month is: ', most_common_month)
+    
+    most_common_day = mode(df['Start Day'])
+    print('The most common day of week is: ', most_common_day)
+
+    most_frquent_start_hour = mode(df['Start Hour'])
+    print('The most common start hour is: ', most_frquent_start_hour)
+    
+    print("\nThis took %s seconds." % (time.time() - start_time))
+    print('-'*40)
 
 
-    # TO DO: display the most common day of week
-
-
-    # TO DO: display the most common start hour
-
-
- #   print("\nThis took %s seconds." % (time.time() - start_time))
-  #  print('-'*40)
-
-
-#def station_stats(df):
+def station_stats(df):
     """Displays statistics on the most popular stations and trip."""
 
- #   print('\nCalculating The Most Popular Stations and Trip...\n')
+    print('\nCalculating The Most Popular Stations and Trip...\n')
     start_time = time.time()
 
-    # TO DO: display most commonly used start station
+    most_commonly_used_start_station = mode(df['Start Station'])
+    print('The most commonly used start station is: ', most_commonly_used_start_station)
+    
+    most_commonly_used_end_station = mode(df['End Station'])
+    print('The most commonly used end station is: ', most_commonly_used_end_station)
+
+    most_frequent_combination_of_start_and_end_stations = mode(df['Start Stop Stations'])
+    print('The most frequent combination of start station and end station trip is: ',  most_frequent_combination_of_start_and_end_stations)
+
+    print("\nThis took %s seconds." % (time.time() - start_time))
+    print('-'*40)
 
 
-    # TO DO: display most commonly used end station
-
-
-    # TO DO: display most frequent combination of start station and end station trip
-
-
- #   print("\nThis took %s seconds." % (time.time() - start_time))
- #   print('-'*40)
-
-
-#def trip_duration_stats(df):
+def trip_duration_stats(df):
     """Displays statistics on the total and average trip duration."""
 
-#    print('\nCalculating Trip Duration...\n')
+    print('\nCalculating Trip Duration...\n')
     start_time = time.time()
 
-    # TO DO: display total travel time
+    df_loc = df[['Start Time', 'End Time', 'Trip Duration']]
+    
+    print(df_loc.head())
+    total_time_for_all_durations = df_loc['Trip Duration'].sum()
+    print('\n')
+    print('Total travel time for all trip durations is: ', total_time_for_all_durations)
+   
+    mean_travle_time = df_loc['Trip Duration'].mean()
+    print('\n')
+    print('The mean travel travel time for all trip durations is: ', mean_travle_time)
+
+    print("\nThis took %s seconds." % (time.time() - start_time))
+    print('-'*40)
 
 
-    # TO DO: display mean travel time
-
-
-#    print("\nThis took %s seconds." % (time.time() - start_time))
-#    print('-'*40)
-
-
-#def user_stats(df):
+def user_stats(df):
     """Displays statistics on bikeshare users."""
 
-#    print('\nCalculating User Stats...\n')
-#    start_time = time.time()
+    print('\nCalculating User Stats...\n')
+    start_time = time.time()
 
-    # TO DO: Display counts of user types
-
-
-    # TO DO: Display counts of gender
-
+    user_type_count = df['User Type'].value_counts()
+    print('Counts of user types: ', user_type_count)
+    
+    if'Gender' in df.columns:
+        gender_count = df['Gender'].value_counts()
+        print('Counts of gender: ', gender_count)
+    else:
+        print('The dataset does not contain a gender column')
 
     # TO DO: Display earliest, most recent, and most common year of birth
+    if'Birth Year' in df.columns:
+        commonest_year_of_birth = int(mode(df['Birth Year']))
+        earliest_year_of_birth = int(min(df['Birth Year']))
+        most_recent_year_of_birth = int(max(df['Birth Year']))
+        print('Earliest: ', earliest_year_of_birth, ' ', 'Commonest: ', \
+              commonest_year_of_birth, ' ', 'Most recent: ', most_recent_year_of_birth )
+    else:
+        print('The dataset does not contain a column for birth year')
 
-
- #   print("\nThis took %s seconds." % (time.time() - start_time))
- #   print('-'*40)
+    print("\nThis took %s seconds." % (time.time() - start_time))
+    print('-'*40)
 
 
 def main():
-    #while True:
+    while True:
         input_data_ = get_filters()
-        df = load_data(input_data_.city, input_data_.month, input_data_.day)
+        data_frame_manger_ = load_data(input_data_.city, input_data_.month, input_data_.day)
+        print(data_frame_manger_.filtered_df.head())
+        print(data_frame_manger_.filtered_df.tail())
+        time_stats(data_frame_manger_.filtered_df)
+        station_stats(data_frame_manger_.filtered_df)
+        trip_duration_stats(data_frame_manger_.filtered_df)
+        user_stats(data_frame_manger_.filtered_df)
 
-        #time_stats(df)
-        #station_stats(df)
-        #trip_duration_stats(df)
-        #user_stats(df)
-
-        #restart = input('\nWould you like to restart? Enter yes or no.\n')
-        #if restart.lower() != 'yes':
-        #    break
+        restart = input('\nWould you like to restart? Enter yes or no.\n')
+        if restart.lower() != 'yes':
+            break
 
 
 if __name__ == "__main__":
