@@ -1,6 +1,9 @@
 import time
 import pandas as pd
 from statistics import mode
+from prettytable import PrettyTable
+import numpy as np
+
 
 
 CITY_DATA = {'chicago': 'chicago.csv',
@@ -72,16 +75,15 @@ class day_checker:
         return False
 
 class city_checker:
-    def __init__(self):
-        self.cities = 'chicago' + ' ' + 'new york city' + ' ' +  'washington'
-    
     def check_input_city(self, city):
         if city == None:
             return False
         
         city_loc = city.strip('\n')
-        if city_loc in self.cities:
-            return True
+        city_loc = city.strip()
+        for key in CITY_DATA.keys():
+            if city_loc == key:
+                return True
         return False
 
 class input_checker:
@@ -115,6 +117,7 @@ def get_filters():
     Asks user to specify a city, month, and day to analyze.
 
     Returns:
+        (input_data) object which contains the followings
         (str) city - name of the city to analyze
         (str) month - name of the month to filter by, or "all" to apply no month filter
         (str) day - name of the day of week to filter by, or "all" to apply no day filter
@@ -153,7 +156,7 @@ def load_data(city, month, day):
         (str) month - name of the month to filter by, or "all" to apply no month filter
         (str) day - name of the day of week to filter by, or "all" to apply no day filter
     Returns:
-        df - Pandas DataFrame manager with DataFrame containing city data filtered by month and day
+        df - DataFrame manager which contains a pandas DataFrame containing city data filtered by month and day
     """
     file_name = CITY_DATA[city]
 
@@ -166,7 +169,7 @@ def load_data(city, month, day):
     df_tmp['End Day'] = df_tmp['End Time'].map(lambda x: x.strftime('%A').lower().strip())
     df_tmp['End Month'] = df_tmp['End Time'].map(lambda x: x.strftime('%B').lower().strip())
     df_tmp['Start Hour'] = df_tmp['Start Time'].map(lambda x: x.strftime('%H'))
-    df_tmp['Start Stop Stations'] = 'Start Station: ' + df_tmp['Start Station'] + '; End Station: ' + df_tmp['End Station']
+    df_tmp['StartStopStations'] = 'Start Station: ' + df_tmp['Start Station'] + '; End Station: ' + df_tmp['End Station']
     
     data_frame_manger_ = data_frame_manger(df_tmp)
     data_frame_manger_.get_filtered_df(month, day)
@@ -205,7 +208,7 @@ def station_stats(df):
     most_commonly_used_end_station = mode(df['End Station'])
     print('The most commonly used end station is: ', most_commonly_used_end_station)
 
-    most_frequent_combination_of_start_and_end_stations = mode(df['Start Stop Stations'])
+    most_frequent_combination_of_start_and_end_stations = mode(df['StartStopStations'])
     print('The most frequent combination of start station and end station trip is: ',  most_frequent_combination_of_start_and_end_stations)
 
     print("\nThis took %s seconds." % (time.time() - start_time))
@@ -240,19 +243,43 @@ def user_stats(df):
     start_time = time.time()
 
     user_type_count = df['User Type'].value_counts()
-    print('Counts of user types: ', user_type_count)
+    print('User Type Count:')
+    user_type_table = PrettyTable(['User Type', 'Counts'])
+    user_type_count_dict = user_type_count.to_dict()
+    for key in user_type_count_dict.keys():
+         counts = user_type_count_dict[key]
+         user_type_table.add_row([key, counts])   
+    print(user_type_table)
     
+    print('\n')
     if'Gender' in df.columns:
-        gender_count = df['Gender'].value_counts()
-        print('Counts of gender: ', gender_count)
+        gender_counts = df['Gender'].value_counts()
+        print('Gender Count: ')
+        gender_counts_dict = gender_counts.to_dict()
+        gender_count_table = PrettyTable(['Gender', 'Counts'])
+        for key in gender_counts_dict.keys():
+            counts = gender_counts_dict[key]
+            gender_count_table.add_row([key, counts])
+        print(gender_count_table)
+        
     else:
         print('The dataset does not contain a gender column')
-
-    # TO DO: Display earliest, most recent, and most common year of birth
+ 
+    print('\n')
+    print('Age information: \n')
     if'Birth Year' in df.columns:
-        commonest_year_of_birth = int(mode(df['Birth Year']))
-        earliest_year_of_birth = int(min(df['Birth Year']))
-        most_recent_year_of_birth = int(max(df['Birth Year']))
+        commonest_year_of_birth = mode(df['Birth Year'])
+        if np.isnan(commonest_year_of_birth) == False:
+            commonest_year_of_birth = int(commonest_year_of_birth)
+        
+        most_recent_year_of_birth = max(df['Birth Year'])
+        if np.isnan(most_recent_year_of_birth) == False:
+            most_recent_year_of_birth = int(most_recent_year_of_birth)
+        
+        earliest_year_of_birth = min(df['Birth Year'])
+        if np.isnan(earliest_year_of_birth) == False:
+            earliest_year_of_birth = int(earliest_year_of_birth)
+            
         print('Earliest: ', earliest_year_of_birth, ' ', 'Commonest: ', \
               commonest_year_of_birth, ' ', 'Most recent: ', most_recent_year_of_birth )
     else:
