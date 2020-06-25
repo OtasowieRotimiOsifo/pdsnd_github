@@ -1,15 +1,15 @@
 ### Date created
-Include the date you created this project and README file.
+Thu Jun 21 21:48:00 CEST 2020
 
 ### Project Title
-Replace the Project Title
+Post your work on github
 
 ### Description
-Describe what your project is about and what it does
+This project is part of a Udacity Course in Programming for Data Science with Python 
 
 ### Files used
-Include the files used
+bikeshare.py
 
 ### Credits
-It's important to give proper credit. Add links to any repo that inspired you or blogposts you consulted.
+https://github.com/udacity/pdsnd_github
 
