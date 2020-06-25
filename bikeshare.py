@@ -1,4 +1,6 @@
 #!/home/oosifo/anaconda3/bin/python
+# -*- coding: utf-8 -*-
+
 import time
 import pandas as pd
 from statistics import mode
